@@ -2,6 +2,7 @@ package eu.vitaliy.pointofsale;
 
 import eu.vitaliy.pointofsale.dao.ProductRepository;
 import eu.vitaliy.pointofsale.domain.Product;
+import eu.vitaliy.pointofsale.exceptions.InvalideBarCodeException;
 import eu.vitaliy.pointofsale.exceptions.ProductNotFoundException;
 import eu.vitaliy.pointofsale.io.OutputDevice;
 
@@ -30,15 +31,23 @@ public class PointOfSale {
     public void readCode(String code) {
         try{
             Product product = productRepository.read(code);
-            handleProductFound(product);
+            handleProduct(product);
         }catch(ProductNotFoundException ex){
-
+            handleError("Product not found");
+        }catch(InvalideBarCodeException ex){
+            handleError("Invalid bar-code");
         }
     }
 
-    private void handleProductFound(Product product) {
+    private void handleProduct(Product product) {
         for (OutputDevice outputDevice : outputDevices) {
             outputDevice.write(product);
+        }
+    }
+
+    private void handleError(String message) {
+        for (OutputDevice outputDevice : outputDevices) {
+            outputDevice.writeError(message);
         }
     }
 }

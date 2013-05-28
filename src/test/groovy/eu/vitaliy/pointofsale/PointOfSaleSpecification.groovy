@@ -2,8 +2,11 @@ package eu.vitaliy.pointofsale
 
 import eu.vitaliy.pointofsale.dao.ProductRepository
 import eu.vitaliy.pointofsale.domain.Product
+import eu.vitaliy.pointofsale.exceptions.InvalideBarCodeException
+import eu.vitaliy.pointofsale.exceptions.ProductNotFoundException
 import eu.vitaliy.pointofsale.io.LCD
 import eu.vitaliy.pointofsale.io.OutputDevice
+import groovy.util.logging.Log
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -12,6 +15,7 @@ import spock.lang.Unroll
  * Date: 28.05.13
  * Time: 14:42
  */
+@Log
 class PointOfSaleSpecification extends Specification {
 
     final static String EXISTS_PRODUCT_CODE = "00001"
@@ -24,14 +28,20 @@ class PointOfSaleSpecification extends Specification {
     final static Map PRODUCT_MAP = PRODUCTS.collectEntries{
          [it.code, it]
     }
+    final static String NOT_EXISTS_CODE = "NOT_EXISTS_CODE"
 
     @Unroll
-    def "if the product is found in products database than it's name and price is printed on LCD display (code:#code)"() {
+    def 'Test Product scan (code: [#code], message: "#expectMessage")'() {
        given:
             ProductRepository productRepository = Mock(ProductRepository)
             productRepository.read(_) >> { String code ->
+                if(code== null || code.isEmpty())
+                    throw new InvalideBarCodeException()
+                else if(PRODUCT_MAP[code] == null)
+                    throw new ProductNotFoundException()
                 PRODUCT_MAP[code]
             }
+
             PointOfSale pointOfSale = new PointOfSale(productRepository)
             ByteArrayOutputStream bos = new ByteArrayOutputStream()
             OutputDevice lcd = new LCD(bos)
@@ -39,13 +49,16 @@ class PointOfSaleSpecification extends Specification {
 
             pointOfSale.readCode(code)
             String outputMessage = new String(bos.toString())
-            String expectMessage = "Product '${name}' price is: ${price}"
+            log.info(outputMessage)
         expect:
             outputMessage == expectMessage
         where:
-            code             | name             | price
-            PRODUCTS[0].code | PRODUCTS[0].name | PRODUCTS[0].price
-            PRODUCTS[1].code | PRODUCTS[1].name | PRODUCTS[1].price
-            PRODUCTS[2].code | PRODUCTS[2].name | PRODUCTS[2].price
+            code             | expectMessage
+            PRODUCTS[0].code | "Product '${PRODUCTS[0].name}' price is: ${PRODUCTS[0].price}"
+            PRODUCTS[1].code | "Product '${PRODUCTS[1].name}' price is: ${PRODUCTS[1].price}"
+            PRODUCTS[2].code | "Product '${PRODUCTS[2].name}' price is: ${PRODUCTS[2].price}"
+            NOT_EXISTS_CODE  | "Product not found"
+            ""               | "Invalid bar-code"
+            null             | "Invalid bar-code"
     }
 }

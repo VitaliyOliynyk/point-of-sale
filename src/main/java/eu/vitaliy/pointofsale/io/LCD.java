@@ -3,6 +3,7 @@ package eu.vitaliy.pointofsale.io;
 import eu.vitaliy.pointofsale.domain.Product;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Locale;
 
@@ -26,5 +27,18 @@ public class LCD implements OutputDevice{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    @Override
+    public void writeError(String message){
+        try {
+            writeErrorImpl(message);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public void writeErrorImpl(String error) throws IOException {
+        outputStream.write(error.getBytes());
     }
 }

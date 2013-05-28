@@ -8,7 +8,6 @@ import java.math.BigDecimal;
  * Time: 15:00
  */
 public class Product {
-
     private String code;
     private String name;
     private float price;
